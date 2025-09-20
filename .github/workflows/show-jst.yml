@@ -1,0 +1,33 @@
+# .github/workflows/show-jst.yml
+name: Show current time (JST)
+
+on:
+  workflow_dispatch: {}          # 手動トリガー
+  schedule:                      # 任意：毎時実行（UTCの毎時0分 → JSTでは毎時9分ずれる点に注意）
+    - cron: '0 * * * *'
+
+jobs:
+  show-time:
+    runs-on: ubuntu-latest
+    env:
+      TZ: Asia/Tokyo              # 環境変数でタイムゾーンを指定（bash の date がこれを参照します）
+    steps:
+      - name: Show runner info
+        run: |
+          echo "Runner: $RUNNER_OS / $RUNNER_TEMP"
+      - name: Show current time with date (JST)
+        run: |
+          # POSIX 環境変数 TZ を使って JST 表示（%F = YYYY-MM-DD, %T = HH:MM:SS）
+          echo "現在時刻 (JST): $(TZ=Asia/Tokyo date '+%F %T %Z (%:z)')"
+      - name: Show current time (日本語フォーマット)
+        run: |
+          echo "現在時刻 (日本語): $(TZ=Asia/Tokyo date '+%Y年%m月%d日 %H時%M分%S秒 %Z')"
+      - name: Show current time with Python (タイムゾーン確認)
+        run: |
+          python - <<'PY'
+          from datetime import datetime
+          import zoneinfo
+          tz = zoneinfo.ZoneInfo("Asia/Tokyo")
+          now = datetime.now(tz)
+          print("Python -> 現在時刻 (JST):", now.strftime("%Y-%m-%d %H:%M:%S %Z%z"))
+          PY
