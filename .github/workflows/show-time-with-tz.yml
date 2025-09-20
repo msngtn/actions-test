@@ -1,0 +1,53 @@
+# .github/workflows/show-time-with-tz.yml
+name: Show current time with timezone
+
+on:
+  workflow_dispatch:
+    inputs:
+      timezone:
+        description: 'Select timezone'
+        required: true
+        default: 'JST'
+        type: choice
+        options:
+          - JST
+          - UTC
+          - UCT
+
+jobs:
+  show-time:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine TZ environment variable
+        run: |
+          case "${{ github.event.inputs.timezone }}" in
+            JST)
+              TZ_VALUE="Asia/Tokyo"
+              ;;
+            UTC|UCT)
+              TZ_VALUE="UTC"
+              ;;
+            *)
+              echo "Invalid timezone. Using UTC."
+              TZ_VALUE="UTC"
+              ;;
+          esac
+          echo "Selected TZ: $TZ_VALUE"
+          echo "TZ=$TZ_VALUE" >> $GITHUB_ENV
+
+      - name: Show current time
+        run: |
+          echo "現在時刻 (${GITHUB_ENV}) : $(date '+%F %T %Z (%:z)')"
+
+      - name: Show current time with Python
+        run: |
+          python - <<'PY'
+          from datetime import datetime
+          import zoneinfo
+          import os
+
+          tz_name = os.getenv("TZ", "UTC")
+          tz = zoneinfo.ZoneInfo(tz_name)
+          now = datetime.now(tz)
+          print(f"Python -> 現在時刻 ({tz_name}): {now.strftime('%Y-%m-%d %H:%M:%S %Z%z')}")
+          PY
